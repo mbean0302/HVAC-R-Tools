@@ -1,3 +1,0 @@
-CFM == BTU/H Output / (1.08 x DeltaT)
-capacitor mfd actual == V / (A x 2650)
-BTU/H output == btu/h input divided by efficiency
