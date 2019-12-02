@@ -1,15 +1,15 @@
 # Module Imports #
 
-import time
-from hvac_defined_functions import *
+from Functions_and_Global_Variables import *
+from tabulate import tabulate
 
 # Change version after each revision. #
 
-version = "Alpha 1.0"
+version = "Alpha 1.6"
 
-print(f"Gas Furnace Maintenance Checklist -- {version}")
+print(f"Gas Furnace Maintenance Checklist (Induced Draft Appliances ONLY) -- {version}")
 
-# Call Details #
+# Call Details and Variables #
 
 tech = input("Technician: ")
 date = str(input("Date of Service: "))
@@ -30,6 +30,7 @@ while svc_req != "Y" or "N":
         print("Please Specify [Y] or [N].")
         svc_req = str(input("Gas Furnace Maintenance [Y/N]: "))
 
+
 # General Overview of System #
 
 tstat_has_battery = input("Does the Thermostat Have Batteries? [Y/N]: ")
@@ -49,10 +50,12 @@ if tstat_has_battery == "Y":
     while battery_change != "Y" or "N":
         if battery_change == "Y":
             print("This is acceptable.")
+            tstat_ok = True
             break
         elif battery_change == "N":
             print("Change batteries...")
             time.sleep(1.5)
+            tstat_ok = True
             break
         else:
             print("Please specify [Y] or [N].")
@@ -60,6 +63,18 @@ if tstat_has_battery == "Y":
 
 print("Set the thermostat to [Heat] and the temperature set-point [Above] the current room temperature.")
 time.sleep(1.5)
+is_call = str.upper(input("Did the appliance initiate a call for heat? [Y/N]: "))
+while is_call == "Y" or is_call == "N":
+    if is_call == "Y":
+        tstat_ok = True
+        break
+    elif is_call == "N":
+        print("Troubleshooting the thermostat may be required...")
+        tstat_ok = False
+        break
+    else:
+        print("Please specify Yes or No [Y/N]...")
+        is_call = str.upper(input("Did the appliance initiate a call for heat? [Y/N]: "))
 
 heat_on = str(input("Did the appliance complete the sequence of operations on a call for heat? [Y/N] "))
 while heat_on != "Y" or "N":
@@ -82,9 +97,11 @@ time.sleep(.350)
 high_voltage = float(input("Enter Measured Line Voltage: "))
 if (hv_rating * 115) / 100 >= high_voltage > (hv_rating * 85 / 100):
     print("Line Voltage is within allowable range.")
+    voltage_ok = True
     time.sleep(1.5)
 else:
     print("Line Voltage is out of tolerance.")
+    voltage_ok = False
     time.sleep(1.5)
 
 lv_rating = float(input("What is the rated control voltage of the appliance? "))
@@ -92,25 +109,23 @@ time.sleep(.650)
 low_voltage = float(input("Enter Measured Control Voltage: "))
 if round((lv_rating * 125) / 100) >= round(low_voltage) > round((lv_rating * 75 / 100)):
     print("Control Voltage is within allowable range.")
+    voltage_ok = True
     time.sleep(1.5)
 else:
     print("Control Voltage is out of tolerance.")
     time.sleep(1.5)
+    voltage_ok = False
 
 ignitor_resistance = float(input("Ignitor Resistance (When Cold): "))
 time.sleep(.650)
 if 20 <= ignitor_resistance < 120:
     print("Ignitor resistance value is within acceptable range.")
+    ignitor_ok = True
     time.sleep(.650)
 else:
     print("Ignitor should be replaced.")
+    ignitor_ok = False
     time.sleep(1.5)
-
-
-
-
-
-
 
 
 # Next Steps #
@@ -125,18 +140,22 @@ is_noisy = input("Are the bearings noisy? [Y/N]: ")
 while is_noisy != "Y" or "N":
     if ind_amp < ind_fla and is_noisy == "N":
         print("Inducer Motor operating within acceptable limits.")
+        inducer_ok = True
         time.sleep(.650)
         break
     elif ind_amp >= ind_fla and is_noisy == "Y":
         print("Inducer Motor should be replaced due to high run amperage and a worn bearing.")
+        inducer_ok = False
         time.sleep(1.5)
         break
     elif ind_amp <= ind_fla and is_noisy == "Y":
         print("Inducer Motor should be replaced due to a worn bearing.")
+        inducer_ok = False
         time.sleep(1.5)
         break
     elif ind_amp >= ind_fla and is_noisy == "N":
         print("Inducer Motor should be replaced due to high run amperage.")
+        inducer_ok = False
         time.sleep(1.5)
         break
     else:
@@ -144,6 +163,19 @@ while is_noisy != "Y" or "N":
         is_noisy = str(input("Are the bearings noisy? [Y/N]: "))
 
 time.sleep(.650)
+
+ind_has_cap = str.upper(input("Does the inducer motor have a capacitor? [Y/N]: "))
+while ind_has_cap == "Y" or ind_has_cap == "N":
+    if ind_has_cap == "Y":
+        cap_test1()
+        break
+    elif ind_has_cap == "N":
+        time.sleep(1.5)
+        break
+    else:
+        print("Please specify Yes or No [Y/N]...")
+        time.sleep(.600)
+        ind_has_cap = str.upper(input("Does the inducer motor have a capacitor? [Y/N]: "))
 
 # Safety 1 Check #
 
@@ -225,8 +257,21 @@ elif ign_type == str.upper("Manual Standing Pilot"):
             else:
                 print("Please specify Yes or No. [Y/N]")
                 pilot_ok = str.upper(input("Did the pilot light ignite the burners? [Y/N]: "))
-
 time.sleep(.650)
+
+# Fuel Type #
+
+is_natural = str.upper(input("Fuel Type [Natural or LP]: "))
+while is_natural == "NATURAL" or "LP":
+    if is_natural == "NATURAL":
+        is_natural = True
+        break
+    elif is_natural == "LP":
+        is_natural = False
+        break
+    else:
+        print("Please specify fuel type as [Natural] or [LP]...")
+        is_natural = str.upper(input("Fuel Type [Natural or LP]: "))
 
 # Stage Check  &  Gas Pressure Check #
 
@@ -304,9 +349,96 @@ if blower_amp < blower_fla and is_noisy == "N":
             is_clean = input(
                 "Is the Indoor Blower free of dirt and debris on the motor housing and squirrel cage? [Y/N]: ")
 
-btu_input = int(input("Enter the BTU/h input of appliance: "))
-eff_percent = int(input("Enter the efficiency of appliance: "))
-btu_output = int((btu_input * eff_percent) / 100)
+blower_has_cap = str.upper(input("Does the appliance blower motor have a capacitor? [Y/N]: "))
+while blower_has_cap == "Y" or blower_has_cap == "N":
+    if blower_has_cap == "Y":
+        cap_test1()
+        break
+    elif blower_has_cap == "N":
+        time.sleep(1.5)
+        break
+    else:
+        print("Please specify Yes or No [Y/N]...")
+        time.sleep(.600)
+        ind_has_cap = str.upper(input("Does the appliance blower motor have a capacitor? [Y/N]: "))
 
-cfm_target = int(input("Enter Target CFM on High Stage: "))
-cfm_actual = btu_output
+# Delta T #
+
+if stage_query == "ONE":
+    print("Check Delta T after 5 minutes of run-time...")
+    single_stage_deltat()
+    time.sleep(1.5)
+
+elif stage_query == "TWO":
+    print("Initiate a call for first stage heating and check Delta T after 5 minutes of run-time... ")
+    two_stage_low_deltat()
+    time.sleep(1.5)
+    print("Initiate a call for second stage heating and check Delta T after 5 minutes of run-time... ")
+    two_stage_high_deltat()
+    time.sleep(1.5)
+
+elif stage_query == "MODULATING":
+    print("Initiate a call for heat in the lowest firing rate possible (Usually 35%) and check Delta T after 5 minutes of run-time... ")
+    time.sleep(1.5)
+    mod_stage_least_deltat()
+    time.sleep(1.5)
+    print("Initiate a call for heat at the max firing rate possible (100% capacity) and check Delta T after 5 minutes of run-time... ")
+    time.sleep(1.5)
+    mod_stage_max_deltat()
+    time.sleep(1.5)
+
+# BTU/h and Efficiency Calculation #
+
+print("Calculate the BTU/h Output of the appliance...")
+time.sleep(1.5)
+btu_calc()
+
+# Condensing or Non-Condensing Check #
+
+condensing_check()
+
+# CFM on Highest Stage #
+
+print("Calculating CFM on highest heat stage..........")
+time.sleep(2.5)
+cfm_calc()
+
+# Drain Check #
+
+if is_condensing == "Condensing":
+    print("Check the condensate drain for proper operation using the following method...")
+    time.sleep(1.5)
+    cond_drain_clear()
+    time.sleep(1.5)
+
+# Combustion Testing #
+
+print("Perform Combustion Testing on appliance during normal operation on highest heating stage, after the appliance has been running for a minimum of 5 minutes...")
+time.sleep(1.5)
+if is_natural:
+    print("Perform zeroing of combustion analyser outside of home and set analyser to Natural Gas.")
+    time.sleep(2)
+    print("While outside, set analyser for ambient CO detection and return indoors making your way to mechanical room while checking for ambient CO readings...")
+    time.sleep(10)
+    print("Locate test port in exhaust piping of appliance, or drill a small hole for analyser wand if one is not already present.")
+    time.sleep(2)
+    print("Perform Combustion Analysis...")
+    combustion_test()
+elif not is_natural:
+    print("Perform zeroing of combustion analyser outside of home and set analyser to LP Gas.")
+    time.sleep(2)
+    print("While outside, set analyser for ambient CO detection and return indoors making your way to mechanical room while checking for ambient CO readings...")
+    time.sleep(10)
+    print("Locate test port in exhaust piping of appliance, or drill a small hole for analyser wand if one is not already present.")
+    time.sleep(2)
+    print("Perform Combustion Analysis...")
+    combustion_test()
+
+time.sleep(2)
+input("When ready, press [Enter] to generate a report...")
+
+# Maintenance Report #
+
+maint_report = [["Thermostat", ]]
+
+print(tabulate(maint_report, headers=["Item Checked", "Actual Reading"]))
